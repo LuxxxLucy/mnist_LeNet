@@ -1,5 +1,7 @@
 import tensorflow as tf
 
+from tensorflow.examples.tutorials.mnist import input_data
+
 def weight_variable(shape):
     initial = tf.truncated_normal(shape, stddev=0.1)
     return tf.Variable(initial)
@@ -14,7 +16,7 @@ def conv2d(x, W):
 def max_pool_2x2(x):
     return tf.nn.max_pool(x, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
 
-def LeNet(x,y_):
+def tf_LeNet(x,y_):
     # input 28*28=784
     # reshape for conv
     x_image = tf.reshape(x, [-1,28,28,1])
@@ -55,3 +57,33 @@ def LeNet(x,y_):
     tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y_output))
 
     return y_output,cross_entropy
+
+class Model:
+    def __init__(self,framework_name,mnist=mnist):
+        self.model=tensorflow_model()
+        self.mnist=mnist
+
+        self.sess = tf.InteractiveSession()
+        tf.global_variables_initializer().run()
+
+    def tensorflow_model(self):
+        # Create the model
+        self.x = tf.placeholder(tf.float32, [None, 784])
+
+        # Define loss and optimizer
+        self.y_ = tf.placeholder(tf.float32, [None, 10])
+        self.y_output,objective_function=tf_LeNet(x,y_)
+        self.train_step = tf.train.GradientDescentOptimizer(0.5).minimize(self.objective_function)
+
+    def train(self):
+        # Train
+        for _ in range(1000):
+            batch_xs, batch_ys = self.mnist.train.next_batch(100)
+            self.sess.run(train_step, feed_dict={x: batch_xs, y_: batch_ys})
+
+    def test(self):
+        # Test trained model
+        self.correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
+        self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+        print(sess.run(accuracy, feed_dict={x: mnist.test.images,
+                                          y_: mnist.test.labels}))
