@@ -64,7 +64,7 @@ class Model():
     def __init__(self):
         pass
 
-    def save_model();
+    def save_model():
         pass
 
     def load_model():
@@ -89,7 +89,7 @@ class TF_Model(Model):
     def train(self,epoch_num=100):
         # Train
         print("training: epoch number",epoch_num)
-        for _ in tqdm(range(epoch_num)):
+        for _ in tqdm(range(epoch_num),ascii=True,desc="training"):
             batch_xs, batch_ys = self.data_set.train.next_batch(100)
             # self.sess.run(self.train_step, feed_dict={self.x: batch_xs, self.y_: batch_ys,self.keep_prob:0.1})
             self.sess.run(self.train_step, feed_dict={self.x: batch_xs, self.y_: batch_ys})
