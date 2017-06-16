@@ -3,6 +3,7 @@ import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
 
 from tqdm import tqdm
+import json
 
 def weight_variable(shape):
     initial = tf.truncated_normal(shape, stddev=0.1)
@@ -18,10 +19,51 @@ def conv2d(x, W):
 def max_pool_2x2(x):
     return tf.nn.max_pool(x, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
 
+def variable_summaries(var):
+    """
+        Attach a lot of summaries to a Tensor
+        (for TensorBoard visualization).
+    """
+    with tf.name_scope('summaries'):
+        mean = tf.reduce_mean(var)
+        tf.summary.scalar('mean', mean)
+    with tf.name_scope('stddev'):
+        stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))
+    tf.summary.scalar('stddev', stddev)
+    tf.summary.scalar('max', tf.reduce_max(var))
+    tf.summary.scalar('min', tf.reduce_min(var))
+    tf.summary.histogram('histogram', var)
+
+def nn_layer(input_tensor, input_dim, output_dim, layer_name, act=tf.nn.relu):
+    """
+        Reusable code for making a simple neural net layer.
+        It does a matrix multiply, bias add, and then uses relu to nonlinearize.
+        It also sets up name scoping so that the resultant graph is easy to read,
+        and adds a number of summary ops.
+    """
+    # Adding a name scope ensures logical grouping of the layers in the graph.
+    with tf.name_scope(layer_name):
+      # This Variable will hold the state of the weights for the layer
+        with tf.name_scope('weights'):
+            weights = weight_variable([input_dim, output_dim])
+            variable_summaries(weights)
+        with tf.name_scope('biases'):
+            biases = bias_variable([output_dim])
+            variable_summaries(biases)
+        with tf.name_scope('Wx_plus_b'):
+            preactivate = tf.matmul(input_tensor, weights) + biases
+            tf.summary.histogram('pre_activations', preactivate)
+        activations = act(preactivate, name='activation')
+        tf.summary.histogram('activations', activations)
+        return activations
+
 def tf_LeNet(x,y_):
     # input 28*28=784
     # reshape for conv
-    x_image = tf.reshape(x, [-1,28,28,1])
+    with tf.name_scope('input_reshape_image'):
+        x_image = tf.reshape(x, [-1,28,28,1])
+        # image_shaped_input = tf.reshape(x, [-1, 28, 28, 1])
+        tf.summary.image('input', x_image, 10)
 
     # first layer:conv
     W_conv1 = weight_variable([5, 5, 1, 32])
@@ -51,52 +93,128 @@ def tf_LeNet(x,y_):
     # output
     y_output = tf.matmul(h_fc1, W_fc2) + b_fc2
 
-    cross_entropy = tf.reduce_mean(
-    tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y_output))
+    with tf.name_scope('cross_entropy'):
+        diff = tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y_output)
+        with tf.name_scope('total'):
+            cross_entropy = tf.reduce_mean(diff)
+    tf.summary.scalar('cross_entropy', cross_entropy)
+
 
     return y_output,cross_entropy
 
-def new_model(type,data_dir="/tmp/tensorflow/mnist/input_data"):
-    if(type=="tensorflow"):
-        return TF_Model(data_dir)
+def new_model(FLAGS):
+    if(FLAGS.framework=="tensorflow"):
+        return TF_Model(FLAGS)
 
-class Model():
-    def __init__(self):
-        pass
+class TF_Model():
+    def __init__(self,FLAGS):
+        self.data_set = input_data.read_data_sets(FLAGS.data_dir, one_hot=True)
+        self.path=FLAGS.path+"_tf_sess.ckpt"
+        self.log_dir=FLAGS.log_path
+        if(FLAGS.load!=False):
+            # load a existing model
+            # self.build_model()
+            self.load_model()
+            simple_log=json.load(open(self.log_dir+"simple_log.json","r"))
+            self.current_i=simple_log["current_i"]
+        else:
+            # which means build a new model
+            print("build a new model")
+            self.build_model()
+            self.current_i=0
+            self.sess = tf.InteractiveSession()
+            tf.global_variables_initializer().run()
+            self.saver = tf.train.Saver()
+            self.train_writer = tf.summary.FileWriter(self.log_dir + '/train', self.sess.graph)
+            self.test_writer = tf.summary.FileWriter(self.log_dir + '/test')
 
-    def save_model():
-        pass
-
-    def load_model():
-        pass
-
-class TF_Model(Model):
-    def __init__(self,data_dir="/tmp/tensorflow/mnist/input_data"):
-        self.data_set = input_data.read_data_sets(data_dir, one_hot=True)
-
-        self.model=self.build_model()
+    def load_model(self):
         self.sess = tf.InteractiveSession()
         tf.global_variables_initializer().run()
+        self.saver= tf.train.import_meta_graph(self.path+".meta")
+        print("loading existing model from ",self.path)
+        self.saver.restore(self.sess,self.path)
+
+        self.merged = tf.summary.merge_all()
+        print("loading success")
+        self.train_writer = tf.summary.FileWriter(self.log_dir + '/train', self.sess.graph)
+        self.test_writer = tf.summary.FileWriter(self.log_dir + '/test')
+        return
+
+    def save_model(self):
+        path=self.saver.save(self.sess,self.path)
+        print("model saved in path ",path)
+        return
+
+
+    def build_graph_input(self):
+        with tf.name_scope('input'):
+            # Create the model
+            self.x = tf.placeholder(tf.float32, [None, 784], name='x-input')
+            # Define loss and optimizer
+            self.y_ = tf.placeholder(tf.float32, [None, 10], name='y-input')
+        return
 
     def build_model(self):
-        # Create the model
-        self.x = tf.placeholder(tf.float32, [None, 784])
-        # Define loss and optimizer
-        self.y_ = tf.placeholder(tf.float32, [None, 10])
+        self.build_graph_input()
         self.y_output,self.objective_function=tf_LeNet(self.x,self.y_)
-        self.train_step = tf.train.GradientDescentOptimizer(0.5).minimize(self.objective_function)
+
+        with tf.name_scope('train'):
+            self.train_step = tf.train.AdamOptimizer(1e-4).minimize(self.objective_function)
+
+        with tf.name_scope('accuracy'):
+            with tf.name_scope('correct_prediction'):
+                self.correct_prediction = tf.equal(tf.argmax(self.y_output, 1), tf.argmax(self.y_, 1))
+            with tf.name_scope('accuracy'):
+                # self.accuracy = tf.reduce_mean(tf.cast(self.correct_prediction, tf.float32))
+                self.accuracy = tf.reduce_mean(tf.cast(self.correct_prediction, tf.float32))
+        tf.summary.scalar('accuracy', self.accuracy)
+        self.merged = tf.summary.merge_all()
+
+        return
+
 
     def train(self,epoch_num=100):
         # Train
         print("training: epoch number",epoch_num)
-        for _ in tqdm(range(epoch_num),ascii=True,desc="training"):
+        for i in tqdm(range(epoch_num),ascii=True,desc="training"):
             batch_xs, batch_ys = self.data_set.train.next_batch(100)
             # self.sess.run(self.train_step, feed_dict={self.x: batch_xs, self.y_: batch_ys,self.keep_prob:0.1})
-            self.sess.run(self.train_step, feed_dict={self.x: batch_xs, self.y_: batch_ys})
-        # self.save_model("tensorflow_model.h5py")
+
+            if i % 10 == 0:  # Record summaries and test-set accuracy
+                summary, acc = self.sess.run([self.merged, self.accuracy], feed_dict={self.x: batch_xs, self.y_: batch_ys})
+                self.test_writer.add_summary(summary, i+self.current_i)
+
+            else:  # Record train set summaries, and train
+                if i % 100 == 99:  # Record execution stats
+                    summary, _ = self.sess.run([self.merged, self.train_step], feed_dict={self.x: batch_xs, self.y_: batch_ys})
+                    self.train_writer.add_summary(summary, i+self.current_i)
+                else:  # Record a summary
+                    summary, _ = self.sess.run([self.merged, self.train_step], feed_dict={self.x: batch_xs, self.y_: batch_ys})
+                    self.train_writer.add_summary(summary, i+self.current_i)
+        self.current_i+=epoch_num
+
+        self.train_writer.close()
+        self.test_writer.close()
+
+        self.save_model()
+        self.test()
 
     def test(self):
         # Test trained model
-        self.correct_prediction = tf.equal(tf.argmax(self.y_output, 1), tf.argmax(self.y_, 1))
-        self.accuracy = tf.reduce_mean(tf.cast(self.correct_prediction, tf.float32))
-        print("accuracy is ",self.sess.run(self.accuracy, feed_dict={self.x: self.data_set.test.images, self.y_: self.data_set.test.labels}))
+        print("now start evaluating the trained model")
+        acc=self.sess.run(self.accuracy, feed_dict={self.x: self.data_set.test.images, self.y_: self.data_set.test.labels})
+        print("accuracy is ",acc)
+        try:
+            f=open(self.log_dir+"simple_log.json","r")
+            simple_log=json.load(f)
+            f.close()
+        except:
+            print("simple log does not exist, create a new one")
+            simple_log=dict()
+
+        simple_log["current_i"]=self.current_i
+        simple_log["acc at "+str(self.current_i)]=float(acc)
+        f=open(self.log_dir+"simple_log.json","w")
+        json.dump(simple_log,f)
+        f.close()
