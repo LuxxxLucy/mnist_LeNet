@@ -132,7 +132,9 @@ class TF_Model():
         else:
             # which means build a new model
             print("build a new model")
-            self.inference()
+            self.x,self.y=self.build_graph_input()
+
+            self.inference(self.x,self.y)
             self.current_i=0
             self.sess = tf.InteractiveSession()
             tf.global_variables_initializer().run()
@@ -165,12 +167,19 @@ class TF_Model():
             self.x = tf.placeholder(tf.float32, [None, 784], name='x-input')
             # Define loss and optimizer
             self.y_ = tf.placeholder(tf.float32, [None, 10], name='y-input')
-        return
+        return self.x,self.y_
 
-    def inference(self):
-        self.build_graph_input()
-        self.y_output,=tf_LeNet(self.x,self.y_)
+    def inference(self,x,y_):
+        '''
+
+        build the inference graph
+
+        '''
+
+        self.y_output=tf_LeNet(x,y_)
+
         self.objective_function=loss(self.y_output,self.y_)
+
         tf.summary.scalar('cross_entropy', self.objective_function)
 
         with tf.name_scope('train'):
