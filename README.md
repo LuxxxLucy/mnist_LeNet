@@ -14,3 +14,9 @@ My goal in this project is to get familiar with these frameworks.
 ## Why MNIST
 
 MNIST seems to be a "hello world" in DL. And also a very good choice to get hands on CNN.
+
+## Usage
+
+```
+python main_access --load --train --test
+```

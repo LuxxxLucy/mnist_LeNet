@@ -93,14 +93,26 @@ def tf_LeNet(x,y_):
     # output
     y_output = tf.matmul(h_fc1, W_fc2) + b_fc2
 
+    return y_output
+
+def loss(y_predition,y_label):
+
+    """
+
+    Calculates the loss from the logits and the labels.
+    Args:
+        y_predition: Logits tensor, float - [batch_size, NUM_CLASSES].
+        y_labels: Labels tensor, int32 - [batch_size].
+    Returns:
+        loss: Loss tensor of type float.
+
+    """
+
     with tf.name_scope('cross_entropy'):
-        diff = tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y_output)
+        diff = tf.nn.softmax_cross_entropy_with_logits(labels=y_label, logits=y_predition)
         with tf.name_scope('total'):
-            cross_entropy = tf.reduce_mean(diff)
-    tf.summary.scalar('cross_entropy', cross_entropy)
-
-
-    return y_output,cross_entropy
+            loss = tf.reduce_mean(diff)
+    return loss
 
 def new_model(FLAGS):
     if(FLAGS.framework=="tensorflow"):
@@ -113,14 +125,14 @@ class TF_Model():
         self.log_dir=FLAGS.log_path
         if(FLAGS.load!=False):
             # load a existing model
-            # self.build_model()
+            # self.inference()
             self.load_model()
             simple_log=json.load(open(self.log_dir+"simple_log.json","r"))
             self.current_i=simple_log["current_i"]
         else:
             # which means build a new model
             print("build a new model")
-            self.build_model()
+            self.inference()
             self.current_i=0
             self.sess = tf.InteractiveSession()
             tf.global_variables_initializer().run()
@@ -155,9 +167,11 @@ class TF_Model():
             self.y_ = tf.placeholder(tf.float32, [None, 10], name='y-input')
         return
 
-    def build_model(self):
+    def inference(self):
         self.build_graph_input()
-        self.y_output,self.objective_function=tf_LeNet(self.x,self.y_)
+        self.y_output,=tf_LeNet(self.x,self.y_)
+        self.objective_function=loss(self.y_output,self.y_)
+        tf.summary.scalar('cross_entropy', self.objective_function)
 
         with tf.name_scope('train'):
             self.train_step = tf.train.AdamOptimizer(1e-4).minimize(self.objective_function)

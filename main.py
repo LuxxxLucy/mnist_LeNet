@@ -15,7 +15,7 @@ import models
 FLAGS = None
 
 
-def main(_):
+def main_access(_):
     model=models.new_model(FLAGS)
     if FLAGS.train:
         model.train(FLAGS.train_num)
@@ -34,4 +34,4 @@ if __name__ == '__main__':
     parser.add_argument('--log_path', type=str, default='log/', help='specify the path of log file(tensorboard)')
     parser.add_argument('--framework', type=str, default='tensorflow', help='frame work name \'tensorflow\' \'keras\'  \'caffe\' or \'pytorch\' ')
     FLAGS, unparsed = parser.parse_known_args()
-    tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
+    tf.app.run(main=main_access, argv=[sys.argv[0]] + unparsed)
