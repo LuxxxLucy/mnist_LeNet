@@ -114,9 +114,6 @@ def loss(y_predition,y_label):
             loss = tf.reduce_mean(diff)
     return loss
 
-def new_model(FLAGS):
-    if(FLAGS.framework=="tensorflow"):
-        return TF_Model(FLAGS)
 
 class TF_Model():
     def __init__(self,FLAGS):
