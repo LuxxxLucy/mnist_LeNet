@@ -1,7 +1,7 @@
 import tensorflow as tf
 
-from tensorflow.examples.tutorials.mnist import input_data
 
+from tensorflow.examples.tutorials.mnist import input_data
 from tqdm import tqdm
 import json
 
@@ -123,12 +123,13 @@ class TF_Model():
         self.data_set = input_data.read_data_sets(FLAGS.data_dir, one_hot=True)
         self.path=FLAGS.path+"_tf_sess.ckpt"
         self.log_dir=FLAGS.log_path
+        self.FLAGS=FLAGS
         if(FLAGS.load!=False):
             # load a existing model
             # self.inference()
             self.load_model()
-            simple_log=json.load(open(self.log_dir+"simple_log.json","r"))
-            self.current_i=simple_log["current_i"]
+            self.simple_log=json.load(open(self.log_dir+"simple_log.json","r"))
+            self.current_i=self.simple_log["current_i"]
         else:
             # which means build a new model
             print("build a new model")
@@ -157,6 +158,17 @@ class TF_Model():
 
     def save_model(self):
         path=self.saver.save(self.sess,self.path)
+        try:
+            with open(self.log_dir+"simple_log.json","r") as f:
+                d=json.load(f)
+        except:
+            d=dict()
+
+        d["current_i"]=self.current_i
+
+        with open(self.log_dir+"simple_log.json","w") as f:
+            json.dump(obj=d,fp=f)
+
         print("model saved in path ",path)
         return
 
@@ -230,14 +242,14 @@ class TF_Model():
         print("accuracy is ",acc)
         try:
             f=open(self.log_dir+"simple_log.json","r")
-            simple_log=json.load(f)
+            self.simple_log=json.load(f)
             f.close()
         except:
             print("simple log does not exist, create a new one")
-            simple_log=dict()
+            self.simple_log=dict()
 
-        simple_log["current_i"]=self.current_i
-        simple_log["acc at "+str(self.current_i)]=float(acc)
+        self.simple_log["current_i"]=self.current_i
+        self.simple_log["acc at "+str(self.current_i)]=float(acc)
         f=open(self.log_dir+"simple_log.json","w")
-        json.dump(simple_log,f)
+        json.dump(self.simple_log,f)
         f.close()
