@@ -10,13 +10,22 @@ import keras
 # import caffe
 # import pytorch
 
-import models
+import tensorflow_model
 
 FLAGS = None
 
+def new_model(FLAGS):
+    if(FLAGS.framework=="tensorflow"):
+        return tensorflow_model.TF_Model(FLAGS)
+    else if FLAGS/framework=="pytorch":
+        pass
+    else:
+        print("illegal option for framework!!!")
+        print("exit with error")
+        quit()
 
 def main_access(_):
-    model=models.new_model(FLAGS)
+    model=new_model(FLAGS)
     if FLAGS.train:
         model.train(FLAGS.train_num)
     if FLAGS.test:
