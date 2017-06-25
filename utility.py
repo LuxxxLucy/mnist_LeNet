@@ -10,9 +10,9 @@ def load_json(filename):
     fp=open(filename,'r')
     result=json.load(fp)
     fp.close()
-    return
+    return result
 
-def save_json(filename,obj):
+def save_json(obj,filename):
     fp=open(filename,'w')
     json.dump(obj=obj,fp=fp)
     fp.close()
