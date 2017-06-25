@@ -17,6 +17,33 @@ MNIST seems to be a "hello world" in DL. And also a very good choice to get hand
 
 ## Usage
 
+### prequiste
+
+you will need many things, but fortunately all is easy to install and cofigue.
+
+- python
+- tensorflow
+- tensorboard
+- tqdm: this was used for logged imfo
+- pytorch
+- keras
+
+### run
+
+run like this
+
 ```
-python main_access --load --train --test
+python main.py  --train --train_num 1000 --load --framework tensorflow
 ```
+
+- --train : indicate that you want to train the model. If this flag is set on, a --train_num must followed
+- --load : use while you want to load a local model
+- --framework: choose your framework: tensorflow, pytorch or keras ...
+
+> there are other flags, like the --log_dir indicating the directory to store the log info
+
+## Experiments
+
+Experiments were made. See `meta/doc/report.md` for detailed result and analysis.
+
+I made some modifications on the lenet architecture in order to find what matters and what not
