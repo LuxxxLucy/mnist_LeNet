@@ -19,6 +19,9 @@ def conv2d(x, W):
 def max_pool_2x2(x):
     return tf.nn.max_pool(x, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
 
+def max_pool_1x1(x):
+    return tf.nn.max_pool(x, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
+
 def variable_summaries(var):
     """
         Attach a lot of summaries to a Tensor
@@ -79,6 +82,7 @@ def tf_LeNet(x,y_):
     h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
     h_pool2 = max_pool_2x2(h_conv2)
 
+
     # third layer:fully-connected
     W_fc1 = weight_variable([7 * 7 * 64, 1024])
     b_fc1 = bias_variable([1024])
@@ -131,6 +135,8 @@ class TF_Model():
             # which means build a new model
             print("build a new model")
             self.x,self.y=self.build_graph_input()
+            self.current_i=0
+            self.simple_log=dict()
 
             self.inference(self.x,self.y)
             self.current_i=0
@@ -243,7 +249,7 @@ class TF_Model():
             print("simple log does not exist, create a new one")
             self.simple_log=dict()
 
+
         self.simple_log["current_i"]=self.current_i
         self.simple_log["acc at "+str(self.current_i)]=float(acc)
-        utility.dump(self.simple_log,self.log_dir+"simple_log.json")
-        f.close()
+        utility.save_json(self.simple_log,self.log_dir+"simple_log.json")
