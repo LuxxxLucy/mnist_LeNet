@@ -17,7 +17,7 @@ FLAGS = None
 def new_model(FLAGS):
     if(FLAGS.framework=="tensorflow"):
         return tensorflow_model.TF_Model(FLAGS)
-    else if FLAGS/framework=="pytorch":
+    elif FLAGS.framework=="pytorch":
         pass
     else:
         print("illegal option for framework!!!")

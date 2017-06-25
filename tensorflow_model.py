@@ -2,8 +2,8 @@ import tensorflow as tf
 
 
 from tensorflow.examples.tutorials.mnist import input_data
-from tqdm import tqdm
-import json
+
+import utility
 
 def weight_variable(shape):
     initial = tf.truncated_normal(shape, stddev=0.1)
@@ -125,7 +125,7 @@ class TF_Model():
             # load a existing model
             # self.inference()
             self.load_model()
-            self.simple_log=json.load(open(self.log_dir+"simple_log.json","r"))
+            self.simple_log=utility.load_json(self.log_dir+"simple_log.json")
             self.current_i=self.simple_log["current_i"]
         else:
             # which means build a new model
@@ -137,6 +137,7 @@ class TF_Model():
             self.sess = tf.InteractiveSession()
             tf.global_variables_initializer().run()
             self.saver = tf.train.Saver()
+            utility.check_dir(self.log_dir)
             self.train_writer = tf.summary.FileWriter(self.log_dir + '/train', self.sess.graph)
             self.test_writer = tf.summary.FileWriter(self.log_dir + '/test')
 
@@ -163,8 +164,7 @@ class TF_Model():
 
         d["current_i"]=self.current_i
 
-        with open(self.log_dir+"simple_log.json","w") as f:
-            json.dump(obj=d,fp=f)
+        utility.save_json(d,self.log_dir+"simple_log.json")
 
         print("model saved in path ",path)
         return
@@ -209,7 +209,7 @@ class TF_Model():
     def train(self,epoch_num=100):
         # Train
         print("training: epoch number",epoch_num)
-        for i in tqdm(range(epoch_num),ascii=True,desc="training"):
+        for i in utility.logged_range(epoch_num,log_info="training!"):
             batch_xs, batch_ys = self.data_set.train.next_batch(100)
             # self.sess.run(self.train_step, feed_dict={self.x: batch_xs, self.y_: batch_ys,self.keep_prob:0.1})
 
@@ -238,15 +238,12 @@ class TF_Model():
         acc=self.sess.run(self.accuracy, feed_dict={self.x: self.data_set.test.images, self.y_: self.data_set.test.labels})
         print("accuracy is ",acc)
         try:
-            f=open(self.log_dir+"simple_log.json","r")
-            self.simple_log=json.load(f)
-            f.close()
+            self.simple_log=utility.load_json(self.log_dir+"simple_log.json")
         except:
             print("simple log does not exist, create a new one")
             self.simple_log=dict()
 
         self.simple_log["current_i"]=self.current_i
         self.simple_log["acc at "+str(self.current_i)]=float(acc)
-        f=open(self.log_dir+"simple_log.json","w")
-        json.dump(self.simple_log,f)
+        utility.dump(self.simple_log,self.log_dir+"simple_log.json")
         f.close()
