@@ -64,7 +64,7 @@ def main():
 
     # hyper-parameter for optimization
     parser.add_argument('--learning_rate', type=float,
-                        default=0.1, help='Base learning rate')
+                        default=0.001, help='Base learning rate')
     parser.add_argument('--lr_decay', type=float, default=0.999995,
                         help='Learning rate decay, applied every step of the optimization')
     parser.add_argument('--batch_size', type=int, default=128,

@@ -108,6 +108,7 @@ class Lenet_Model_Session(ModelSession):
             train_op = tf.train.AdamOptimizer(learning_rate, beta1=0.9, beta2=0.999, epsilon=1e-08,
                                               use_locking=False).minimize(cost, global_step=iteration, name="train_step")
             y_predict = tf.argmax(y_, 1)
+            y=tf.argmax(y,1)
             correct_prediction = tf.equal(y_predict, y)
             acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32), name="accuracy")
 
@@ -130,6 +131,11 @@ class Lenet_Model_Session(ModelSession):
                                            self.learning_rate: learning_rate})[1]
 
     def test(self, x, y):
+        x, y = self.preprocess(x, y)
+        result= self.session.run(self.accuracy, feed_dict={self.x: x, self.y: y, self.drop_rate: 0.0})
+        return result
+
+    def test_batch(self, x, y):
         x, y = self.preprocess(x, y)
         result= self.session.run(self.accuracy, feed_dict={self.x: x, self.y: y, self.drop_rate: 0.0})
         return result
