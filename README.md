@@ -28,12 +28,16 @@ you will need many things, but fortunately all is easy to install and cofigue.
 - pytorch
 - keras
 
+### datasets
+
+the dataloader for mnist is wrapped in `data/mnist_data.py`
+
 ### run
 
 run like this
 
 ```
-python main.py  --train --train_num 1000 --load --framework tensorflow
+python main_entry.py  --train_num 1000 --load --framework tensorflow
 ```
 
 - --train : indicate that you want to train the model. If this flag is set on, a --train_num must followed
